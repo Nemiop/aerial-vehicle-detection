@@ -1,0 +1,22 @@
+raw_video_directory: Data/Raw
+frame_directory: Data/Frames
+manifest_path: Data/Frames/frames_manifest.csv
+sampling_fps: 2.0
+jpeg_quality: 95
+
+videos:
+  - source: train_A.mp4
+    collection: trainA
+    split: train
+  - source: train_B.mp4
+    collection: trainB
+    split: train
+  - source: train_C.mp4
+    collection: trainC
+    split: train
+  - source: train_D.mp4
+    collection: trainD
+    split: validation
+
+excluded_videos:
+  - Evaluation.mp4

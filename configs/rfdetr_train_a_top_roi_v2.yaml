@@ -1,0 +1,48 @@
+run_id: 20260920_native_tiles_v2_plus_trainA_top_roi_v2
+
+input_manifest: Data/Frames/frames_manifest.csv
+artifact_directory: Data/Labels/proposals
+base_predictions: Data/Labels/proposals/rfdetr_large/20260920_native_tiles_v2/predictions.json
+output_directory: Data/Labels/proposals/rfdetr_large/20260920_native_tiles_v2_plus_trainA_top_roi_v2
+
+device: cuda:0
+checkpoint: rfdetr-large
+precision: fp16
+model_resolution_pixels: 704
+confidence_threshold: 0.08
+
+teachers:
+  - name: rfdetr_large
+
+target_source_video: train_A.mp4
+
+region_xyxy_pixels:
+  - 704
+  - 0
+  - 1216
+  - 512
+
+acceptance_polygon_pixels:
+  - [835, 0]
+  - [1025, 0]
+  - [1045, 420]
+  - [820, 420]
+
+box_size_filter_pixels:
+  minimum_width: 2
+  minimum_height: 3
+  maximum_width: 100
+  maximum_height: 180
+
+postprocessing:
+  cross_class_conflict_iou: 0.85
+  duplicate_car_iou: 0.85
+  duplicate_truck_containment: 0.80
+  tile_nms_iou: 0.60
+  convert_bus_to_truck: true
+  remove_truck_from_source_videos:
+    - train_B.mp4
+
+overlay:
+  jpeg_quality: 95
+  jpeg_subsampling: 0

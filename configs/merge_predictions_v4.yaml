@@ -1,0 +1,64 @@
+run_id: 20260920_tiled_v4_trainA_top_roi
+
+inputs:
+  yolo26x: Data/Labels/proposals/yolo26x/20260920_tiled_v1/predictions.json
+  rfdetr_large: Data/Labels/proposals/rfdetr_large/20260920_tiled_v1_plus_trainA_top_roi_v1/predictions.json
+
+input_manifest: Data/Frames/frames_manifest.csv
+output_directory: Data/Labels/proposals/prediction_tree/20260920_tiled_v4_trainA_top_roi
+
+matching:
+  minimum_iou: 0.50
+  near_identical_iou: 0.85
+  moderate_overlap_strategy: equal_weight_box_fusion
+  near_identical_strategy: keep_larger_box
+  keep_unmatched_predictions: true
+
+truck_geometry:
+  enabled: true
+  containment_over_smaller: 0.65
+  transverse_overlap: 0.70
+  longitudinal_overlap: 0.15
+  maximum_longitudinal_gap: 0.03
+  anchor_union_coverage: 0.70
+  distinct_truck_minimum_area_ratio: 0.55
+  distinct_truck_horizontal_overlap: 0.50
+  distinct_truck_horizontal_protrusion: 0.10
+  distinct_truck_horizontal_center_separation: 0.24
+
+class_conflict:
+  output_class_name: class_conflict
+  preserve_teacher_classes: true
+
+overlay:
+  jpeg_quality: 95
+  jpeg_subsampling: 0
+  dash_length_pixels: 12
+  gap_length_pixels: 8
+  minimum_line_width_pixels: 2
+  line_width_scale_divisor: 1000
+  minimum_font_size_pixels: 14
+  font_size_scale_divisor: 160
+  text_padding_pixels: 2
+  visual_class_aliases:
+    car: car
+    motorcycle: car
+    truck: truck
+  teacher_labels:
+    yolo26x: YOLO
+    rfdetr_large: RF-DETR
+  labels:
+    car: Car
+    truck: Truck
+    unknown: Unknown Type
+  colors:
+    car:
+      yolo26x: "#85B895"
+      rfdetr_large: "#3FAE63"
+      both: "#00D447"
+    truck:
+      yolo26x: "#C98F8F"
+      rfdetr_large: "#D85151"
+      both: "#FF2020"
+    unknown:
+      unknown: "#374151"

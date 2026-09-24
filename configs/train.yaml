@@ -1,0 +1,17 @@
+frame_manifest: Data/Frames/frames_manifest.csv
+labels_directory: Data/Labels/final_vehicle
+artifacts_directory: My Artifacts
+train_split: train
+validation_split: validation
+
+classes:
+  - vehicle
+
+model:
+  max_parameter_count: 499999
+
+source_classes_to_merge:
+  - car
+  - motorcycle
+  - bus
+  - truck

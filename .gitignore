@@ -1,0 +1,35 @@
+# Data and generated artifacts
+Data/
+My Artifacts/
+tmp/
+output/
+!report/
+!report/ml_engineer_vehicle_detector_report.pdf
+
+# Model checkpoints and downloaded weights
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.engine
+*.safetensors
+
+# Archives, rendered media and local environments
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.mp4
+*.avi
+*.mov
+*.jpg
+*.jpeg
+*.png
+*.webp
+.venv/
+__pycache__/
+*.py[cod]
+
+# CVAT is an external dependency, not vendored here
+tools/cvat/*
+!tools/cvat/README.md

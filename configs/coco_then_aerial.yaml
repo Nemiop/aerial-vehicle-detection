@@ -1,0 +1,10 @@
+# One overnight run: generic COCO transport pre-training followed by aerial fine-tuning.
+pipeline:
+  coco_config: configs/coco_vehicle_pretrain.yaml
+  aerial_config: configs/experiment_002_yolo26n_vehicle_p2p3p4.yaml
+  coco_epochs: 60
+  aerial_epochs: 120
+  # These override the laptop-oriented values in the aerial experiment copy.
+  aerial_batch_size: 16
+  aerial_workers: 8
+  aerial_amp: true

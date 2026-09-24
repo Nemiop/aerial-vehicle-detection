@@ -1,0 +1,2 @@
+# Local experiment tracking for the yolo-gpu Python environment.
+mlflow==3.7.0

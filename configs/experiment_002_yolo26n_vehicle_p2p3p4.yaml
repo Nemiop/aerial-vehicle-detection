@@ -1,0 +1,92 @@
+# Second experiment: direct P2, P3, and P4 prediction scales under 500K params.
+experiment:
+  name: vehicle_student_yolo26n_p2p3p4_492k
+  run_name: experiment_002_pretrained_p2p3p4_492k_960
+  state: pending_implementation_and_ground_truth_preview_approval
+  description: >-
+    Fine-tune the 492,535-parameter P2/P3/P4 compact student on A/B/C and
+    validate on D. P2 is connected directly to Detect for small vehicles.
+
+mlflow:
+  database_path: My Artifacts/mlflow/tracking.db
+  artifact_root: My Artifacts/mlflow/artifacts
+  ui_url: http://127.0.0.1:5000
+
+dataset:
+  root: Data/Labels/final_vehicle/20260923_vehicle_yolo_v1
+  data_yaml: Data/Labels/final_vehicle/20260923_vehicle_yolo_v1/data.yaml
+  manifest: Data/Labels/final_vehicle/20260923_vehicle_yolo_v1/dataset_manifest.csv
+  metadata: Data/Labels/final_vehicle/20260923_vehicle_yolo_v1/metadata.json
+  classes: [vehicle]
+  training_videos: [train_A, train_B, train_C]
+  validation_videos: [train_D]
+  split_policy: video_level_holdout
+
+model:
+  architecture_yaml: configs/yolo26n_vehicle_p2p3p4_492k.yaml
+  source_checkpoint: yolo26n.pt
+  initialized_state_dict: >-
+    My Artifacts/student_model/smoke_tests/20260923_yolo26n_vehicle_p2p3p4_492k_initialization/initialized_student_state_dict.pt
+  transfer_report: >-
+    My Artifacts/student_model/smoke_tests/20260923_yolo26n_vehicle_p2p3p4_492k_initialization/transfer_report.json
+  parameter_count: 492535
+  maximum_parameter_count: 499999
+  input_size_pixels: 960
+  prediction_scales: [P2/4, P3/8, P4/16]
+
+training:
+  status: pending_implementation_and_ground_truth_preview_approval
+  epochs: 120
+  early_stopping_patience_epochs: 30
+  batch_size: 2
+  workers: 0
+  optimizer: AdamW
+  initial_learning_rate: 0.001
+  final_learning_rate_fraction: 0.01
+  warmup_epochs: 3
+  random_seed: 42
+  amp: false
+  deterministic: false
+  sampler:
+    name: vehicle_aware_random_tiles
+    mode: online_per_sample
+    samples_per_source_image_per_epoch: 4
+    model_input_size_pixels: 960
+    source_tile_size_pixels: 960
+    frame_scale_range: [0.8, 2.0]
+    minimum_scaled_vehicle_size_quantile: 0.05
+    mosaic_probability: 0.25
+  augmentations:
+    random_horizontal_flip_probability: 0.50
+    random_vertical_flip_probability: 0.00
+    brightness_delta: 0.20
+    contrast_delta: 0.20
+    saturation_delta: 0.25
+    hue_delta: 0.015
+    gaussian_blur_probability: 0.05
+    jpeg_compression_probability: 0.10
+  geometry_verification:
+    block_training_when_checks_fail: true
+    coordinate_reference: source_image_pixels_xyxy
+    required_label_class_id: 0
+    minimum_visible_box_fraction: 0.50
+    round_trip_iou_threshold: 0.999
+    random_preview_count_per_video: 25
+  validation:
+    evaluation_unit: deterministic_source_image_tiles
+    source_tile_size_pixels: 1280
+    model_input_size_pixels: 960
+    tile_overlap_fraction: 0.20
+    use_augmentations: false
+    ground_truth_assignment: box_center_in_tile_ownership_region
+    metric_aggregation: all_validation_tiles
+    confidence_threshold: 0.20
+    nms_iou_threshold: 0.30
+
+checkpointing:
+  selection_metric: metrics/mAP50-95(B)
+  keep_local_best_and_last: true
+  log_final_model_to_mlflow: true
+  artifact_subdirectory: checkpoints
+  best_checkpoint_file_name: best.pt
+  resumable_checkpoint_file_name: last.pt

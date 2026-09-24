@@ -1,0 +1,31 @@
+# Compact YOLO26n-derived detector for one-class aerial vehicle detection.
+# The final parameter count is verified by the smoke-test script before inference.
+nc: 1
+end2end: false
+reg_max: 1
+scale: n
+scales:
+  # [depth, width, max_channels]
+  # Keep every surviving YOLO26n P3/P4 backbone tensor shape unchanged.
+  n: [0.50, 0.25, 512]
+
+# P3/P4 backbone. P5 and C2PSA are intentionally removed.
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 2, C3k2, [256, false, 0.25]]
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 2, C3k2, [512, false, 0.25]] # 4-P3
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 2, C3k2, [512, true]] # 6-P4
+  - [-1, 1, SPPF, [320, 5, 3, true]] # 7-P4 context, 80 output channels
+
+# Lightweight top-down/bottom-up P3/P4 neck.
+head:
+  - [-1, 1, nn.Upsample, [None, 2, nearest]]
+  - [[-1, 4], 1, Concat, [1]]
+  - [-1, 2, C3k2, [256, true]] # 10-P3/8
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [[-1, 7], 1, Concat, [1]]
+  - [-1, 2, C3k2, [320, true]] # 13-P4/16, 80 output channels
+  - [[10, 13], 1, Detect, [nc]]

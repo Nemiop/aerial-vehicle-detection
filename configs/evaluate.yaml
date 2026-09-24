@@ -1,0 +1,22 @@
+frame_manifest: Data/Frames/frames_manifest.csv
+reviewed_labels_directory: Data/Labels/reviewed
+artifacts_directory: My Artifacts
+
+distance_ranges_meters:
+  - [0, 200]
+  - [200, 400]
+
+source_classes:
+  - car
+  - motorcycle
+  - bus
+  - truck
+
+camera:
+  horizontal_fov_degrees: null
+
+reference_length_meters:
+  car: null
+  motorcycle: null
+  bus: null
+  truck: null

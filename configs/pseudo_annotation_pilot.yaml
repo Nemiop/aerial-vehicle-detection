@@ -1,0 +1,29 @@
+input_manifest: Data/Frames/pilot_manifest.csv
+artifact_directory: My Artifacts/pseudo_annotation/pilot_v2
+device: cuda:0
+batch_size: 1
+
+classes:
+  - car
+  - motorcycle
+  - bus
+  - truck
+
+processing_variants:
+  - name: full_frame
+  - name: full_frame_with_tiles
+    tile_size_pixels: 1280
+    tile_overlap: 0.20
+
+teachers:
+  - name: yolo26x
+    checkpoint: yolo26x.pt
+    input_size_pixels: 1280
+    confidence_threshold: 0.05
+    iou_threshold: 0.60
+    precision: fp16
+  - name: rfdetr_large
+    checkpoint: rfdetr-large
+    input_size_pixels: 704
+    confidence_threshold: 0.15
+    precision: fp16

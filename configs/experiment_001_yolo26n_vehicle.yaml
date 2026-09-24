@@ -1,0 +1,104 @@
+# First reproducible experiment.  It is intentionally configured but not started.
+experiment:
+  name: vehicle_student_yolo26n_p3p4
+  run_name: experiment_001_pretrained_960_baseline
+  state: awaiting_ground_truth_preview_review
+  description: >-
+    Initialize the compact one-class P3/P4 student from YOLO26n, train on A/B/C,
+    and use D only for validation.
+
+mlflow:
+  database_path: My Artifacts/mlflow/tracking.db
+  artifact_root: My Artifacts/mlflow/artifacts
+  ui_url: http://127.0.0.1:5000
+
+dataset:
+  root: Data/Labels/final_vehicle/20260923_vehicle_yolo_v1
+  data_yaml: Data/Labels/final_vehicle/20260923_vehicle_yolo_v1/data.yaml
+  manifest: Data/Labels/final_vehicle/20260923_vehicle_yolo_v1/dataset_manifest.csv
+  metadata: Data/Labels/final_vehicle/20260923_vehicle_yolo_v1/metadata.json
+  classes: [vehicle]
+  training_videos: [train_A, train_B, train_C]
+  validation_videos: [train_D]
+  split_policy: video_level_holdout
+
+model:
+  architecture_yaml: configs/yolo26n_vehicle_p3p4.yaml
+  source_checkpoint: yolo26n.pt
+  initialized_state_dict: >-
+    My Artifacts/student_model/smoke_tests/20260923_yolo26n_vehicle_p3p4_960_initialization/initialized_student_state_dict.pt
+  transfer_report: >-
+    My Artifacts/student_model/smoke_tests/20260923_yolo26n_vehicle_p3p4_960_initialization/transfer_report.json
+  parameter_count: 492794
+  maximum_parameter_count: 499999
+  input_size_pixels: 960
+
+# The sampler must be implemented before the training command is allowed to run.
+# Once training starts, it is an online sampler: every call produces a newly
+# sampled tile and applies augmentation in that same call. It is not a one-time
+# dataset expansion, and default full-frame resize is never a substitute.
+training:
+  status: pending_implementation_and_ground_truth_preview_approval
+  epochs: 120
+  early_stopping_patience_epochs: 30
+  # Windows currently cannot satisfy a single 1 GiB CUDA allocation, although
+  # most VRAM is free; batch 2 keeps each activation allocation below that cap.
+  batch_size: 2
+  # Windows multiprocessing duplicates Torch DLL loading and exhausts system
+  # memory in this environment. GPU computation is unchanged with workers=0.
+  workers: 0
+  optimizer: AdamW
+  initial_learning_rate: 0.001
+  final_learning_rate_fraction: 0.01
+  warmup_epochs: 3
+  random_seed: 42
+  # Disabled for this run: Ultralytics AMP self-test allocates a large stock
+  # YOLO26n image before our compact model starts and exhausts Windows memory.
+  amp: false
+  # Seed remains fixed. Full deterministic mode is disabled because PyTorch 2.11
+  # imports the large compiler stack on Windows and exhausts available system RAM.
+  deterministic: false
+  sampler:
+    name: vehicle_aware_random_tiles
+    mode: online_per_sample
+    samples_per_source_image_per_epoch: 4
+    model_input_size_pixels: 960
+    source_tile_size_pixels: 960
+    frame_scale_range: [0.8, 2.0]
+    minimum_scaled_vehicle_size_quantile: 0.05
+    mosaic_probability: 0.25
+  augmentations:
+    random_horizontal_flip_probability: 0.50
+    # All source videos preserve gravity: sky is above the ground.
+    random_vertical_flip_probability: 0.00
+    brightness_delta: 0.20
+    contrast_delta: 0.20
+    saturation_delta: 0.25
+    hue_delta: 0.015
+    gaussian_blur_probability: 0.05
+    jpeg_compression_probability: 0.10
+  geometry_verification:
+    block_training_when_checks_fail: true
+    coordinate_reference: source_image_pixels_xyxy
+    required_label_class_id: 0
+    minimum_visible_box_fraction: 0.50
+    round_trip_iou_threshold: 0.999
+    random_preview_count_per_video: 25
+  validation:
+    evaluation_unit: deterministic_source_image_tiles
+    source_tile_size_pixels: 1280
+    model_input_size_pixels: 960
+    tile_overlap_fraction: 0.20
+    use_augmentations: false
+    ground_truth_assignment: box_center_in_tile_ownership_region
+    metric_aggregation: all_validation_tiles
+    confidence_threshold: 0.20
+    nms_iou_threshold: 0.30
+
+checkpointing:
+  selection_metric: metrics/mAP50-95(B)
+  keep_local_best_and_last: true
+  log_final_model_to_mlflow: true
+  artifact_subdirectory: checkpoints
+  best_checkpoint_file_name: best.pt
+  resumable_checkpoint_file_name: last.pt

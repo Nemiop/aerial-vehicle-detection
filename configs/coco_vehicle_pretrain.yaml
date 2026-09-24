@@ -1,0 +1,56 @@
+# COCO 2017 transport pre-training, kept separate from the aerial A-D dataset.
+experiment:
+  name: vehicle_student_coco_transport_pretrain
+  run_name: coco_transport_p2p3p4_492k_960
+  description: >-
+    Pre-train the compact one-class student on COCO images containing road
+    vehicles, then fine-tune it on the aerial A-C/D experiment separately.
+
+mlflow:
+  database_path: My Artifacts/mlflow/tracking.db
+  artifact_root: My Artifacts/mlflow/artifacts
+
+dataset:
+  root: Data/coco_vehicle_2017
+  data_yaml: Data/coco_vehicle_2017/data.yaml
+  manifest: Data/coco_vehicle_2017/metadata.json
+  metadata: Data/coco_vehicle_2017/metadata.json
+  # These are the categories used in the existing vehicle policy. Bicycle is
+  # deliberately excluded: it is not one of the target road-vehicle classes.
+  coco_categories: [car, motorcycle, bus, truck]
+  output_class: vehicle
+  # A deterministic subset keeps the 30-GB RunPod volume and training cost
+  # bounded. Set either value to 0 only after increasing persistent storage.
+  max_train_images: 20000
+  max_validation_images: 2000
+  download_workers: 16
+
+model:
+  architecture_yaml: configs/yolo26n_vehicle_p2p3p4_492k.yaml
+  source_checkpoint: yolo26n.pt
+  initialized_state_dict: >-
+    My Artifacts/student_model/smoke_tests/20260923_yolo26n_vehicle_p2p3p4_492k_initialization/initialized_student_state_dict.pt
+  transfer_report: >-
+    My Artifacts/student_model/smoke_tests/20260923_yolo26n_vehicle_p2p3p4_492k_initialization/transfer_report.json
+  parameter_count: 492535
+  maximum_parameter_count: 499999
+
+training:
+  epochs: 30
+  batch_size: 32
+  workers: 12
+  input_size_pixels: 960
+  optimizer: AdamW
+  initial_learning_rate: 0.001
+  final_learning_rate_fraction: 0.01
+  warmup_epochs: 3
+  early_stopping_patience_epochs: 10
+  random_seed: 42
+  amp: true
+  deterministic: false
+
+checkpointing:
+  selection_metric: metrics/mAP50-95(B)
+  artifact_subdirectory: checkpoints
+  best_checkpoint_file_name: best.pt
+  resumable_checkpoint_file_name: last.pt

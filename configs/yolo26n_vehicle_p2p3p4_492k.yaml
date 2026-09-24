@@ -1,0 +1,40 @@
+# YOLO26n-derived one-class detector with direct P2/P3/P4 predictions.
+#
+# Exact checked parameter count: 492,535 (< 500,000).
+# Backbone layers 0-6 preserve YOLO26n tensor shapes for pretrained transfer.
+# P5 and C2PSA remain removed. The new neck uses 48 P2, 48 P3 and 56 P4
+# channels: P2 has enough capacity for tiny vehicles while P4 retains context
+# for the much larger vehicles expected in the unseen video.
+nc: 1
+end2end: false
+reg_max: 1
+scale: n
+scales:
+  n: [0.50, 0.25, 512]
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 2, C3k2, [256, false, 0.25]] # 2-P2
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 2, C3k2, [512, false, 0.25]] # 4-P3
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 2, C3k2, [512, true]] # 6-P4
+  - [-1, 1, SPPF, [320, 5, 3, true]] # 7-P4 context, 80 channels
+
+# Top-down P4 -> P3 -> P2 and compact bottom-up P2 -> P3 -> P4 fusion.
+# Layer 13 is the direct P2/4 detector input; it is included in Detect below.
+head:
+  - [-1, 1, nn.Upsample, [None, 2, nearest]] # 8-P4 to P3
+  - [[-1, 4], 1, Concat, [1]] # 9-P3 fusion
+  - [-1, 2, C3k2, [128, true]] # 10-P3, 32 channels
+  - [-1, 1, nn.Upsample, [None, 2, nearest]] # 11-P3 to P2
+  - [[-1, 2], 1, Concat, [1]] # 12-P2 fusion
+  - [-1, 2, C3k2, [192, true]] # 13-P2, 48 channels
+  - [-1, 1, Conv, [192, 3, 2]] # 14-P2 to P3, 48 channels
+  - [[-1, 10], 1, Concat, [1]] # 15-P3 fusion
+  - [-1, 2, C3k2, [192, true]] # 16-P3, 48 channels
+  - [-1, 1, Conv, [224, 3, 2]] # 17-P3 to P4, 56 channels
+  - [[-1, 7], 1, Concat, [1]] # 18-P4 fusion
+  - [-1, 2, C3k2, [224, true]] # 19-P4, 56 channels
+  - [[13, 16, 19], 1, Detect, [nc]] # 20-P2/4, P3/8, P4/16

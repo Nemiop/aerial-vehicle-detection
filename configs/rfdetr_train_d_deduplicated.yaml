@@ -1,0 +1,21 @@
+input_manifest: Data/Frames/frames_manifest.csv
+artifact_directory: Data/Labels/proposals
+run_id: 20260923_rfdetr_train_d_deduplicated_v3_full
+device: cuda:0
+
+teacher:
+  name: rfdetr_large
+  checkpoint: rfdetr-large
+  model_resolution_pixels: 704
+  tile_size_pixels: 1280
+  tile_overlap: 0.20
+  confidence_threshold: 0.25
+  precision: fp16
+
+postprocessing:
+  cross_class_iou: 0.30
+  contained_duplicate_containment: 0.60
+  contained_duplicate_larger_area_ratio: 1.10
+  elongated_aspect_ratio: 4.0
+  elongated_containment: 0.65
+  elongated_larger_area_ratio: 1.50

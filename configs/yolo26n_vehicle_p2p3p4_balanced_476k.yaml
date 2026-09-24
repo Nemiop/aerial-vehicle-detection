@@ -1,0 +1,41 @@
+# Balanced compact YOLO26n-derived detector: P2/4, P3/8 and P4/16.
+#
+# Exact checked parameter count: 476,703 (< 500,000).
+# This is the capacity-balanced successor to the P3/P4 plan near 477K:
+# full P2/P3/P4 backbone channels remain compatible with YOLO26n transfer,
+# while only the newly created neck is narrowed.
+nc: 1
+end2end: false
+reg_max: 1
+scale: n
+scales:
+  # Keep the surviving backbone tensor shapes identical to YOLO26n.
+  n: [0.50, 0.25, 512]
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 2, C3k2, [256, false, 0.25]] # 2-P2
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 2, C3k2, [512, false, 0.25]] # 4-P3
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 2, C3k2, [512, true]] # 6-P4
+  - [-1, 1, SPPF, [320, 5, 3, true]] # 7-P4 context, 80 channels
+
+# Top-down P4 -> P3 -> P2, followed by a compact bottom-up P2 -> P3 -> P4.
+# Detect consumes 40, 48 and 56 channels respectively. Capacity grows toward
+# the coarser maps while P2 remains a direct small-object prediction scale.
+head:
+  - [-1, 1, nn.Upsample, [None, 2, nearest]] # 8-P4 to P3
+  - [[-1, 4], 1, Concat, [1]] # 9-P3 fusion
+  - [-1, 2, C3k2, [128, true]] # 10-P3, 32 channels
+  - [-1, 1, nn.Upsample, [None, 2, nearest]] # 11-P3 to P2
+  - [[-1, 2], 1, Concat, [1]] # 12-P2 fusion
+  - [-1, 2, C3k2, [160, true]] # 13-P2, 40 channels
+  - [-1, 1, Conv, [160, 3, 2]] # 14-P2 to P3, 40 channels
+  - [[-1, 10], 1, Concat, [1]] # 15-P3 fusion
+  - [-1, 2, C3k2, [192, true]] # 16-P3, 48 channels
+  - [-1, 1, Conv, [224, 3, 2]] # 17-P3 to P4, 56 channels
+  - [[-1, 7], 1, Concat, [1]] # 18-P4 fusion
+  - [-1, 2, C3k2, [224, true]] # 19-P4, 56 channels
+  - [[13, 16, 19], 1, Detect, [nc]] # 20-P2/4, P3/8, P4/16

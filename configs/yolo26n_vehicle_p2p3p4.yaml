@@ -1,0 +1,42 @@
+# Compact YOLO26n-derived detector with direct P2, P3, and P4 predictions.
+#
+# Backbone layers 0-6 retain the YOLO26n topology so their pretrained tensors can
+# be copied exactly. P5 and C2PSA remain removed. The neck is deliberately
+# narrower than the earlier P3/P4-only version: this pays for the P2 branch while
+# keeping the whole one-class model below the 500,000-parameter limit.
+nc: 1
+end2end: false
+reg_max: 1
+scale: n
+scales:
+  # [depth, width, max_channels]
+  n: [0.50, 0.25, 512]
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 2, C3k2, [256, false, 0.25]] # 2-P2
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 2, C3k2, [512, false, 0.25]] # 4-P3
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 2, C3k2, [512, true]] # 6-P4
+  - [-1, 1, SPPF, [320, 5, 3, true]] # 7-P4 context, 80 channels
+
+# P4 -> P3 -> P2 top-down path, then compact P2 -> P3 -> P4 bottom-up path.
+# P2/4 is supplied directly to Detect, which is the material change from the
+# P3/P4 baseline. The 32/48-channel neck keeps the parameter budget available
+# for the new detection scale.
+head:
+  - [-1, 1, nn.Upsample, [None, 2, nearest]] # 8-P4 to P3
+  - [[-1, 4], 1, Concat, [1]] # 9-P3 fusion
+  - [-1, 2, C3k2, [128, true]] # 10-P3, 32 channels
+  - [-1, 1, nn.Upsample, [None, 2, nearest]] # 11-P3 to P2
+  - [[-1, 2], 1, Concat, [1]] # 12-P2 fusion
+  - [-1, 2, C3k2, [128, true]] # 13-P2, 32 channels
+  - [-1, 1, Conv, [128, 3, 2]] # 14-P2 to P3, 32 channels
+  - [[-1, 10], 1, Concat, [1]] # 15-P3 fusion
+  - [-1, 2, C3k2, [192, true]] # 16-P3, 48 channels
+  - [-1, 1, Conv, [192, 3, 2]] # 17-P3 to P4, 48 channels
+  - [[-1, 7], 1, Concat, [1]] # 18-P4 fusion
+  - [-1, 2, C3k2, [192, true]] # 19-P4, 48 channels
+  - [[13, 16, 19], 1, Detect, [nc]] # 20-P2/4, P3/8, P4/16
