@@ -7,7 +7,7 @@ End-to-end experimentation code for detecting vehicles in Bird View video frames
 - `configs/` - YAML configurations for teacher inference, pseudo-label merging, COCO pre-training, aerial fine-tuning and evaluation.
 - `scripts/` - preparation, annotation, training, inference, MLflow and report-generation utilities.
 - `docs/` - annotation policy, pseudo-labelling plan, prediction-tree notes and training workflow.
-- `report/ml_engineer_vehicle_detector_report.pdf` - final four-page project report.
+- `README_ML_ENGINEER_VEHICLE_DETECTOR_REPORT.pdf` - final four-page project report.
 - `tools/cvat/` - instructions for the external CVAT dependency.
 
 ## Pipeline
